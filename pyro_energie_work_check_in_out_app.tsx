@@ -238,7 +238,7 @@
                                     <span class="text-xs font-semibold">ซื้อเศษเหล็ก</span>
                                 </label>
                                 <label class="job-option flex flex-col items-center justify-center p-3 bg-[#0D1630] border border-[#1A2C7B] rounded-xl cursor-pointer hover:bg-[#121B33] hover:border-[#82C341]/50 transition-all text-center select-none">
-                                    <input type="radio" name="jobDetails" value="อื่นๆ" onchange="toggleOtherJobInput()" class="sr-only">
+                                    <input type="radio" name="jobDetails" value="อื่นๆ" class="sr-only">
                                     <i data-lucide="more-horizontal" class="w-6 h-6 text-slate-400 mb-1.5"></i>
                                     <span class="text-xs font-semibold">อื่นๆ</span>
                                 </label>
@@ -682,15 +682,21 @@ function doPost(e) {
             const loadedWebhook = localStorage.getItem(STRG_KEY_WEBHOOK);
             if (loadedWebhook) {
                 webhookUrl = loadedWebhook;
-                document.getElementById('webhook-url').value = webhookUrl;
+                const webhookInput = document.getElementById('webhook-url');
+                if (webhookInput) webhookInput.value = webhookUrl;
             }
 
             // Bind dynamic Lucide icons
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
 
             // Setup real-time current clock to form
             updateCurrentTime();
             setInterval(updateCurrentTime, 1000);
+
+            // Initialize job options interactive styling safely
+            initJobOptions();
 
             // Re-render interfaces
             renderActiveTable();
@@ -733,7 +739,8 @@ function doPost(e) {
 
         // 3. Hide/Show "Other Job Type text input"
         function toggleOtherJobInput() {
-            const isOther = document.querySelector('input[name="jobDetails"]:checked').value === 'อื่นๆ';
+            const isOtherInput = document.querySelector('input[name="jobDetails"]:checked');
+            const isOther = isOtherInput && isOtherInput.value === 'อื่นๆ';
             const container = document.getElementById('otherJobContainer');
             const otherText = document.getElementById('otherJobText');
             if (isOther) {
@@ -746,25 +753,37 @@ function doPost(e) {
             }
         }
 
-        // Allow styling radio cards dynamically to logo-theme green highlights
-        document.querySelectorAll('input[name="jobDetails"]').forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                document.querySelectorAll('.job-option').forEach(el => {
-                    el.classList.remove('border-[#82C341]', 'bg-[#121B33]');
-                    el.classList.add('border-[#1A2C7B]', 'bg-[#0D1630]');
+        // Initialize and bind job options styling safely after DOM loaded
+        function initJobOptions() {
+            const jobRadios = document.querySelectorAll('input[name="jobDetails"]');
+            jobRadios.forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.querySelectorAll('.job-option').forEach(el => {
+                        el.classList.remove('border-[#82C341]', 'bg-[#121B33]');
+                        el.classList.add('border-[#1A2C7B]', 'bg-[#0D1630]');
+                    });
+                    
+                    if (e.target.checked) {
+                        const parent = e.target.closest('.job-option');
+                        if (parent) {
+                            parent.classList.add('border-[#82C341]', 'bg-[#121B33]');
+                            parent.classList.remove('border-[#1A2C7B]', 'bg-[#0D1630]');
+                        }
+                    }
+                    toggleOtherJobInput();
                 });
-                
-                if (e.target.checked) {
-                    const parent = e.target.closest('.job-option');
+            });
+
+            // Highlight the initial checked job option
+            const checkedJob = document.querySelector('input[name="jobDetails"]:checked');
+            if (checkedJob) {
+                const parent = checkedJob.closest('.job-option');
+                if (parent) {
                     parent.classList.add('border-[#82C341]', 'bg-[#121B33]');
                     parent.classList.remove('border-[#1A2C7B]', 'bg-[#0D1630]');
                 }
-                toggleOtherJobInput();
-            });
-        });
-
-        // Setup active selection state visual on startup
-        document.querySelector('input[name="jobDetails"]:checked').closest('.job-option').classList.add('border-[#82C341]', 'bg-[#121B33]');
+            }
+        }
 
         // 4. Handle file previews and base64 conversion
         function previewImage(input, previewId) {
@@ -864,6 +883,22 @@ function doPost(e) {
             document.querySelector('input[name="orgType"][value="employee"]').checked = true;
             toggleOrganizationField();
 
+            // Reset selected job option styling back to first one ('ขายยาง')
+            document.querySelectorAll('.job-option').forEach(el => {
+                el.classList.remove('border-[#82C341]', 'bg-[#121B33]');
+                el.classList.add('border-[#1A2C7B]', 'bg-[#0D1630]');
+            });
+            const firstRadio = document.querySelector('input[name="jobDetails"]');
+            if (firstRadio) {
+                firstRadio.checked = true;
+                const parent = firstRadio.closest('.job-option');
+                if (parent) {
+                    parent.classList.add('border-[#82C341]', 'bg-[#121B33]');
+                    parent.classList.remove('border-[#1A2C7B]', 'bg-[#0D1630]');
+                }
+            }
+            toggleOtherJobInput();
+
             // Update UI
             renderActiveTable();
             updateCounters();
@@ -903,7 +938,7 @@ function doPost(e) {
                         </td>
                     </tr>
                 `;
-                lucide.createIcons();
+                if (typeof lucide !== 'undefined') lucide.createIcons();
                 return;
             }
 
@@ -933,7 +968,7 @@ function doPost(e) {
                 `;
                 tbody.appendChild(tr);
             });
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
         // Render History list inside table with brand elements
@@ -989,7 +1024,7 @@ function doPost(e) {
                 `;
                 tbody.appendChild(tr);
             });
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
         // Live filtering inside tables
@@ -1268,7 +1303,7 @@ function doPost(e) {
 
             titleEl.innerText = title;
             messageEl.innerText = message;
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
 
             setTimeout(() => {
                 toast.className = "fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-3 bg-[#080E21] border px-5 py-4 rounded-xl shadow-2xl max-w-md w-full";
